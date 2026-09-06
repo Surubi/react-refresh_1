@@ -2,97 +2,110 @@
 // module-resolution settings cannot resolve.
 // @ts-ignore - keep the import compatible until moduleResolution is set to "bundler", "node16", or "nodenext".
 import Keycloak from 'keycloak-js';
-import { Navigate } from 'react-router-dom';
 
 
-export default class  KeyCloakConfig {
-    public static readonly url: string = "http://localhost:8080";
-    public static readonly realm: string = "master";
-    public static readonly clientId: string = "react-app-client";
 
-    public static  KEY_CLOAK: Keycloak = new Keycloak(KeyCloakConfig.getKeycloakConfig());
+declare global {
+  interface Window {
+    refreshTokenInterval:  NodeJS.Timer;
+  }
+}
 
-    public static getKeycloakConfig(): any {
-        return {
-            url: KeyCloakConfig.url,
-            realm: KeyCloakConfig.realm,
-            clientId: KeyCloakConfig.clientId
-        };
-    }
-
-    public static getKeycloakInitOptions(): any {
-        return {
-            onLoad: "check-sso", //"login-required",   // or 'check-sso'
-            pkceMethod: "S256",         // recommended for security
-            checkLoginIframe: false,
-        };
-    }
-
-    public static initializeKeycloak(): void {
-    
-        const keycloakInitOptions = KeyCloakConfig.getKeycloakInitOptions();
-
-        KeyCloakConfig.KEY_CLOAK.init(keycloakInitOptions).then((authenticated: boolean) => {
-            console.log('Keycloak initialized. Authenticated:', authenticated);
-            if (authenticated) {
-                KeyCloakConfig.setKeycloakBearerToken(KeyCloakConfig.KEY_CLOAK.token);
-                console.log('Keycloak Complete : ', KeyCloakConfig.KEY_CLOAK);
-                KeyCloakConfig.setAuthenticated(true);
-
-            } else {
-                KeyCloakConfig.clearKeycloakBearerToken();
-                KeyCloakConfig.clearAuthenticated();
-                KeyCloakConfig.KEY_CLOAK.login({
-                    redirectUri: "http://localhost:3000/login"
-                });
-            }
-        }).catch((error: any) => {
-            KeyCloakConfig.clearKeycloakBearerToken();
-            KeyCloakConfig.clearAuthenticated();
-            console.error('Keycloak initialization error:', error);
-        });
-    }
-
-    public static getKeycloakBearerToken(): string | null {
-        const token = localStorage.getItem('kc_token');
-        return token ? token : null;
-    }
+const url: string = process.env.REACT_APP_SERVER_URL || "http://localhost:8080";
+const realm: string = process.env.REACT_APP_REALM || "react-application-realm";
+const clientId: string = process.env.REACT_APP_CLIENT_ID || "react-application-client";
 
 
-    public static setKeycloakBearerToken(token: string): void {
-        localStorage.setItem('kc_token', token);
-    }
+const getKeycloakConfig: any = () => {
+    return {
+        url: url,
+        realm: realm,
+        clientId: clientId
+    };
+}
 
-    public static clearKeycloakBearerToken(): void {
-        localStorage.removeItem('kc_token');
-    }
+const KEY_CLOAK: Keycloak = new Keycloak(getKeycloakConfig());
+const getKeycloakInitOptions: any = () => {
+    return {
+        onLoad: "check-sso", //"login-required",   // or 'check-sso'
+        pkceMethod: "S256",         // recommended for security
+        checkLoginIframe: false,
+    };
+}
 
-    public static isAuthenticated(): boolean {
-        const token = KeyCloakConfig.getKeycloakBearerToken();
-        return token !== null;
-    }
 
-    public static logout(): void {
-        if(KeyCloakConfig.isAuthenticated()){
-            KeyCloakConfig.KEY_CLOAK.logout({ redirectUri: "http://localhost:3000/login" });
+
+const handleTokenRefresh = () => {
+    KEY_CLOAK.updateToken(30).then((refreshed: boolean) => {
+        if (refreshed) {
+            console.log("Token refreshed");
+        } else {
+            console.log("Token not refreshed, valid for " + Math.round(KEY_CLOAK.tokenParsed?.exp! + KEY_CLOAK.timeSkew! - new Date().getTime() / 1000) + " seconds");
         }
-        KeyCloakConfig.clearKeycloakBearerToken();
-        localStorage.removeItem('isAuthenticated');
+    }).catch(() => {
+        console.error("Failed to refresh token");
+        logout();
+
+
+    });
+};
+
+export const initializeKeycloak = async () => {
+
+    const keycloakInitOptions = getKeycloakInitOptions();
+    try {
+        const authenticated = await KEY_CLOAK.init(keycloakInitOptions)
+        setKeycloakBearerToken(KEY_CLOAK.token);
+        setAuthenticated(authenticated);
+        setLoggedInUseName(KEY_CLOAK.tokenParsed?.preferred_username || undefined);
+        window.refreshTokenInterval = setInterval(() => {
+            handleTokenRefresh();
+        }, 30000);
+        return authenticated;
+    } catch (ex) {
+        return false;
     }
+}
 
-    public static setAuthenticated(isAuthenticated: boolean): void {
-        localStorage.setItem('isAuthenticated', isAuthenticated ? 'true' : 'false');
-    }
+const setLoggedInUseName = (username: string) => {
+    localStorage.setItem('user_name', username);
+}
 
-    public static getAuthenticated(): boolean {
-        const isAuthenticated = localStorage.getItem('isAuthenticated');
-        return isAuthenticated === 'true';
-    }
+export const getLoggedInUseName = (): string | null => {
+    return localStorage.getItem('user_name');
+}
 
-    public static clearAuthenticated(): void {
-        localStorage.removeItem('isAuthenticated');
-    }
+export const getKeycloakBearerToken = (): string | null => {
+    const token = localStorage.getItem('kc_token');
+    return token ? token : null;
+}
 
 
+export const setKeycloakBearerToken = (token: string) => {
+    localStorage.setItem('kc_token', token);
+}
+
+export const clearKeycloakBearerToken = (): void => {
+    localStorage.removeItem('kc_token');
+}
+
+export const isAuthenticated = (): boolean => {
+    const isAuthenticated = localStorage.getItem('isAuthenticated');
+    return isAuthenticated === 'true';
+}
+
+export const logout = () => {
+    localStorage.removeItem('user_name');
+    localStorage.removeItem('isAuthenticated');
+    clearKeycloakBearerToken();
+    KEY_CLOAK.logout({ redirectUri: "http://localhost:3000/login" });
+}
+
+export const login = () => {
+    KEY_CLOAK.login({ redirectUri: "http://localhost:3000/login" });
+}
+
+const setAuthenticated = (isAuthenticated: boolean) => {
+    localStorage.setItem('isAuthenticated', isAuthenticated ? 'true' : 'false');
 }
 

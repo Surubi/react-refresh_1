@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { toggleExpand } from "../features/menue-ctrl/menue-visiblity-ctrl.store";
-import { KEY_CLOAK } from "..";
+import { logout } from "../kc-config/keycloak-config";
 
 export const MainMenue = () => {
   const [activeMenu, setActiveMenu] = useState("Dashboard");
@@ -46,7 +46,7 @@ export const MainMenue = () => {
   return (
     <aside
       className={`${isCollapsed ? "w-20" : "w-60"
-        } bg-slate-900 text-white flex flex-col shadow-lg transition-all duration-300`}
+        } shrink-0 bg-slate-900 text-white flex flex-col shadow-lg transition-all duration-300`}
       onMouseEnter={() => setIsCollapsed(false)}
       onMouseLeave={() => setIsCollapsed(true)}
     >
@@ -187,9 +187,7 @@ export const MainMenue = () => {
           )}
         </div>
         <button className="text-slate-400 hover:text-white" onClick={() => {
-          KEY_CLOAK.logout({
-            redirectUri: "http://localhost:3000/login"
-          });
+          logout();          
         }}>
           <svg
             className="w-5 h-5"

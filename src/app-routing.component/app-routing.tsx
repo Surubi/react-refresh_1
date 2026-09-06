@@ -1,14 +1,15 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Login } from '../login.component/login';
-import { Unauthorized } from '../403.component/403';
-import { UnAuthenticated } from '../401.component/401';
-import { NotFound } from '../404.component/404';
+import { Unauthorized } from '../error.component/403.component/403';
+import { UnAuthenticated } from '../error.component/401.component/401';
+import { NotFound } from '../error.component/404.component/404';
 import { Home } from '../home.component/Home';
 import { IsAuthenticated } from '../auth-guard.component/IsAuthenticated';
 import { Films } from '../films.component/Films';
 import { Actors } from '../actors.component/actors';
 import { Settings } from '../settings.component/settings';
 import HomeContentComponent from '../home.component/default.home.compnent';
+import TransactionForm from '../add-transaction/transact.component';
 
 export const AppRouting = ({ isAuthenticated }: { isAuthenticated: boolean }) => {
 
@@ -22,6 +23,7 @@ export const AppRouting = ({ isAuthenticated }: { isAuthenticated: boolean }) =>
         <Route path="" element={<HomeContentComponent />} />
         <Route path="/actors" element={<Actors />} />
         <Route path="/films" element={<Films />} />
+        <Route path="/projects" element={<TransactionForm />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
       <Route path="/unauthorized" element={<Unauthorized />} />
