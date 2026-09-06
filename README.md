@@ -4,8 +4,19 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Available Scripts
 
-In the project directory, you can run:
+```
+Clone it
+npm install
+make sure you have docker-desktop on your pc
+run docker-compose
+login to Keycloak
+setup realm and one client with master realm or you can create new realm
+npm start
+```
 
+### Keycloak client setup:
+<img width="982" height="596" alt="image" src="https://github.com/user-attachments/assets/1e8b5e6c-bf6b-4d01-885c-06a703ed30e2" />
+<img width="1025" height="517" alt="image" src="https://github.com/user-attachments/assets/99307bbe-29cf-434a-96fd-52411478284f" />
 ### `npm start`
 
 Runs the app in the development mode.\
